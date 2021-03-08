@@ -18,9 +18,23 @@ pub fn sort_actual_pages_by_date(a: &&Page, b: &&Page) -> Ordering {
     }
 }
 
+/// Used by the feed
+/// There to not have to import sorting stuff in the site crate
+// TODO: bbkane: actually use this...
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn sort_actual_pages_by_updated(a: &&Page, b: &&Page) -> Ordering {
+    let ord = b.meta.updateddatetime.unwrap().cmp(&a.meta.updateddatetime.unwrap());
+    if ord == Ordering::Equal {
+        a.permalink.cmp(&b.permalink)
+    } else {
+        ord
+    }
+}
+
 /// Takes a list of (page key, date, permalink) and sort them by dates if possible
 /// Pages without date will be put in the unsortable bucket
 /// The permalink is used to break ties
+/// To sort by updated, simply use the updateddatetime in the date section of the passed Vec
 pub fn sort_pages_by_date(
     pages: Vec<(&DefaultKey, Option<NaiveDateTime>, &str)>,
 ) -> (Vec<DefaultKey>, Vec<DefaultKey>) {
@@ -101,6 +115,13 @@ mod tests {
         Page::new("content/hello.md", front_matter, &PathBuf::new())
     }
 
+    fn create_page_with_updated(date: &str) -> Page {
+        let mut front_matter = PageFrontMatter::default();
+        front_matter.updated = Some(date.to_string());
+        front_matter.updated_to_datetime();
+        Page::new("content/hello.md", front_matter, &PathBuf::new())
+    }
+
     fn create_page_with_weight(weight: usize) -> Page {
         let mut front_matter = PageFrontMatter::default();
         front_matter.weight = Some(weight);
@@ -124,6 +145,28 @@ mod tests {
         ];
         let (pages, _) = sort_pages_by_date(input);
         // Should be sorted by date
+        assert_eq!(pages[0], key3);
+        assert_eq!(pages[1], key1);
+        assert_eq!(pages[2], key2);
+    }
+
+    #[test]
+    fn can_sort_by_updateds() {
+        let mut dense = DenseSlotMap::new();
+        let page1 = create_page_with_updated("2018-01-01");
+        let key1 = dense.insert(page1.clone());
+        let page2 = create_page_with_updated("2017-01-01");
+        let key2 = dense.insert(page2.clone());
+        let page3 = create_page_with_updated("2019-01-01");
+        let key3 = dense.insert(page3.clone());
+
+        let input = vec![
+            (&key1, page1.meta.updateddatetime, page1.permalink.as_ref()),
+            (&key2, page2.meta.updateddatetime, page2.permalink.as_ref()),
+            (&key3, page3.meta.updateddatetime, page3.permalink.as_ref()),
+        ];
+        let (pages, _) = sort_pages_by_date(input);
+        // Should be sorted by updated
         assert_eq!(pages[0], key3);
         assert_eq!(pages[1], key1);
         assert_eq!(pages[2], key2);

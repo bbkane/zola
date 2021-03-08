@@ -20,6 +20,12 @@ pub struct PageFrontMatter {
     /// Updated date
     #[serde(default, deserialize_with = "from_toml_datetime")]
     pub updated: Option<String>,
+    /// Chrono converted updateddatetime
+    #[serde(default, skip_deserializing)]
+    pub updateddatetime: Option<NaiveDateTime>,
+    /// the converted updated into a (year, month, day) tuple
+    #[serde(default, skip_deserializing)]
+    pub updateddatetime_tuple: Option<(i32, u32, u32)>,
     /// Date if we want to order pages (ie blog post)
     #[serde(default, deserialize_with = "from_toml_datetime")]
     pub date: Option<String>,
@@ -109,6 +115,14 @@ impl PageFrontMatter {
         self.datetime_tuple = self.datetime.map(|dt| (dt.year(), dt.month(), dt.day()));
     }
 
+    /// Converts the TOML updated datetime to a Chrono naive datetime
+    /// Also grabs the year/month/day tuple that will be used in serialization (TODO: is this needed for updated)
+    pub fn updated_to_datetime(&mut self) {
+        self.updateddatetime = self.updated.as_ref().map(|s| s.as_ref()).and_then(parse_datetime);
+        self.updateddatetime_tuple =
+            self.updateddatetime.map(|dt| (dt.year(), dt.month(), dt.day()));
+    }
+
     pub fn weight(&self) -> usize {
         self.weight.unwrap()
     }
@@ -120,6 +134,8 @@ impl Default for PageFrontMatter {
             title: None,
             description: None,
             updated: None,
+            updateddatetime: None,
+            updateddatetime_tuple: None,
             date: None,
             datetime: None,
             datetime_tuple: None,
