@@ -46,6 +46,8 @@ impl RawFrontMatter<'_> {
 pub enum SortBy {
     /// Most recent to oldest
     Date,
+    /// Most recently updated to least recently updated. If page.updated is not present, falls back to page.date
+    Updated,
     /// Lower weight comes first
     Weight,
     /// No sorting

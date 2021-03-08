@@ -282,6 +282,21 @@ impl Library {
 
                     sort_pages_by_date(data)
                 }
+                SortBy::Updated => {
+                    let data = section
+                        .pages
+                        .iter()
+                        .map(|k| {
+                            if let Some(page) = self.pages.get(*k) {
+                                (k, page.meta.updateddatetime, page.permalink.as_ref())
+                            } else {
+                                unreachable!("Sorting got an unknown page.updated")
+                            }
+                        })
+                        .collect();
+
+                    sort_pages_by_date(data)
+                }
                 SortBy::Weight => {
                     let data = section
                         .pages
@@ -309,6 +324,10 @@ impl Library {
                 if let Some(page) = self.pages.get_mut(k2) {
                     match sort_by {
                         SortBy::Date => {
+                            page.earlier = val2;
+                            page.later = val1;
+                        }
+                        SortBy::Updated => {
                             page.earlier = val2;
                             page.later = val1;
                         }
